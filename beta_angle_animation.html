@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beta Angle Animation</title>
+<style>
+  :root {
+    --bg: #ffffff; --card: #f5f4ef; --text: #1f1e1d; --muted: #6b6a65; --border: #d3d1c7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1f1e1d; --card: #2c2c2a; --text: #f1efe8; --muted: #b4b2a9; --border: #5f5e5a; }
+  }
+  body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--text);
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 16px; }
+  .controls label { font-size: 14px; color: var(--muted); }
+  .controls input[type=range] { flex: 1; min-width: 180px; }
+  button { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+           padding: 8px 14px; font-size: 14px; cursor: pointer; }
+  button:hover { background: var(--card); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .card { background: var(--card); border-radius: 8px; padding: 12px 16px; }
+  .card .lab { font-size: 13px; color: var(--muted); }
+  .card .val { font-size: 22px; font-weight: 500; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+  canvas { display: block; width: 100%; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Beta angle and eclipses</h1>
+  <p class="sub">FireSat II: 700 km circular orbit, drawn to scale. The Sun shines from the left.</p>
+
+  <div class="controls">
+    <label for="beta">Beta angle β</label>
+    <input type="range" id="beta" min="-90" max="90" step="1" value="0">
+    <span id="betaOut" style="font-weight:500;min-width:44px;">0°</span>
+    <button id="sweep">Sweep β like FireSat II</button>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="lab">Eclipse per orbit</div><div class="val" id="ecl">35 min</div></div>
+    <div class="card"><div class="lab">Time in sunlight</div><div class="val" id="sun">64 %</div></div>
+    <div class="card"><div class="lab">Thermal case</div><div class="val" id="case">Cold</div></div>
+  </div>
+
+  <canvas id="cv" style="height:420px;"></canvas>
+
+  <div class="legend">
+    <span><span class="dot" style="background:#EF9F27"></span>Satellite in sunlight</span>
+    <span><span class="dot" style="background:#888780"></span>Satellite in Earth's shadow</span>
+    <span><span style="display:inline-block;width:16px;height:2px;background:#7F77DD;margin-right:6px;vertical-align:3px;"></span>Orbit normal</span>
+  </div>
+
+  <div style="margin-top:14px;">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">One orbit (99 min), unrolled — grey = eclipse</div>
+    <canvas id="strip" style="height:28px;border-radius:8px;"></canvas>
+  </div>
+</main>
+
+<script>
+// ---------------- Parameters ----------------
+const RE = 6378;                 // Earth radius [km]
+const H = 700;                   // altitude [km]
+const A = (RE + H) / RE;         // orbit radius in Earth radii
+const P = 98.8;                  // orbital period [min]
+const BSTAR = Math.asin(RE / (RE + H)) * 180 / Math.PI;   // no-eclipse limit [deg]
+const BETA_MAX = 78;             // i + 23.4 deg for FireSat II
+const YAW = -0.62, PITCH = 0.38; // camera angles [rad]
+
+// ---------------- Setup ----------------
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const st = document.getElementById('strip'), sx = st.getContext('2d');
+const bIn = document.getElementById('beta'), bOut = document.getElementById('betaOut');
+const btn = document.getElementById('sweep');
+let beta = 0, theta = 0, sweeping = false, sweepT = 0, W, Hh, dpr, earthImg = null;
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  W = cv.clientWidth; Hh = 420;
+  cv.width = W * dpr; cv.height = Hh * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  st.width = st.clientWidth * dpr; st.height = 28 * dpr; sx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  earthImg = null;
+}
+
+// ---------------- Geometry ----------------
+// World frame: Sun along -x (light travels +x), Earth's shadow is the cylinder x > 0, y^2 + z^2 < 1.
+// Orthographic camera: rotate about z by YAW, then about x by PITCH. Returns [screenX, screenY, depth] (depth > 0 = behind).
+function project(p) {
+  const x = p[0] * Math.cos(YAW) - p[1] * Math.sin(YAW);
+  const y = p[0] * Math.sin(YAW) + p[1] * Math.cos(YAW);
+  const z = p[2];
+  const depth = y * Math.cos(PITCH) - z * Math.sin(PITCH);
+  const up = y * Math.sin(PITCH) + z * Math.cos(PITCH);
+  return [x, up, depth];
+}
+
+// Orbit plane spanned by e1 = (cos b, sin b, 0) and e2 = (0, 0, 1).
+// Its normal (sin b, -cos b, 0) makes 90 deg - b with the Sun direction, so the Sun is b above the plane.
+function orbitPoint(t, b) {
+  const br = b * Math.PI / 180;
+  return [A * Math.cos(t) * Math.cos(br), A * Math.cos(t) * Math.sin(br), A * Math.sin(t)];
+}
+
+function inShadow(p) { return p[0] > 0 && p[1] * p[1] + p[2] * p[2] < 1; }
+
+// Eclipse fraction of a circular orbit (cylindrical shadow)
+function eclipseFraction(b) {
+  if (Math.abs(b) >= BSTAR) return 0;
+  const br = Math.abs(b) * Math.PI / 180;
+  return Math.acos(Math.sqrt(H * H + 2 * RE * H) / ((RE + H) * Math.cos(br))) / Math.PI;
+}
+
+// Pre-render the shaded Earth (Sun and camera are fixed, so this is done once)
+function buildEarth(S) {
+  const r = Math.round(S), n = Math.floor(2 * r * dpr);
+  const img = ctx.createImageData(n, n);
+  const vx = [Math.cos(YAW), -Math.sin(YAW), 0];
+  const vy = [Math.sin(YAW) * Math.sin(PITCH), Math.cos(YAW) * Math.sin(PITCH), Math.cos(PITCH)];
+  const vz = [-Math.sin(YAW) * Math.cos(PITCH), -Math.cos(YAW) * Math.cos(PITCH), Math.sin(PITCH)];
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const u = (i / dpr - r) / S, v = -(j / dpr - r) / S, d = u * u + v * v, k = 4 * (j * n + i);
+    if (d > 1) { img.data[k + 3] = 0; continue; }
+    const w = Math.sqrt(1 - d);
+    const px = u * vx[0] + v * vy[0] + w * vz[0];            // world x of the visible surface point
+    const lit = -px, day = lit > 0, shade = day ? 0.55 + 0.45 * lit : 0.35;
+    const c = day ? [55, 138, 221] : [12, 68, 124];
+    img.data[k] = c[0] * shade; img.data[k + 1] = c[1] * shade; img.data[k + 2] = c[2] * shade; img.data[k + 3] = 255;
+  }
+  const oc = document.createElement('canvas'); oc.width = n; oc.height = n;
+  oc.getContext('2d').putImageData(img, 0, 0);
+  earthImg = { c: oc, r: r };
+}
+
+// ---------------- Drawing ----------------
+function draw() {
+  const S = Math.min(W, Hh) * 0.3, cx = W * 0.55, cy = Hh * 0.52;
+  const toScreen = p => { const q = project(p); return [cx + q[0] * S, cy - q[1] * S, q[2]]; };
+  const textCol = cssVar('--muted'), textPri = cssVar('--text');
+  ctx.clearRect(0, 0, W, Hh);
+  ctx.font = '12px sans-serif';
+
+  // Shadow cylinder
+  const o = toScreen([0, 0, 0]), xa = toScreen([1, 0, 0]);
+  const L = Math.hypot(xa[0] - o[0], xa[1] - o[1]);
+  const ux = (xa[0] - o[0]) / L, uy = (xa[1] - o[1]) / L, px = -uy, py = ux;
+  ctx.fillStyle = 'rgba(136,135,128,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(o[0] + px * S, o[1] + py * S);
+  ctx.lineTo(o[0] + px * S + ux * S * 6, o[1] + py * S + uy * S * 6);
+  ctx.lineTo(o[0] - px * S + ux * S * 6, o[1] - py * S + uy * S * 6);
+  ctx.lineTo(o[0] - px * S, o[1] - py * S);
+  ctx.fill();
+  ctx.fillStyle = textCol;
+  ctx.fillText("Earth's shadow", o[0] + ux * S * 2.2 + px * S * 1.15, o[1] + uy * S * 2.2 + py * S * 1.15);
+
+  // Sun and rays
+  const sp = [o[0] - ux * S * 2.6, o[1] - uy * S * 2.6];
+  ctx.fillStyle = '#EF9F27'; ctx.beginPath(); ctx.arc(sp[0], sp[1], 14, 0, 2 * Math.PI); ctx.fill();
+  ctx.strokeStyle = '#EF9F27'; ctx.lineWidth = 1.5;
+  for (let k = -2; k <= 2; k++) {
+    const a0 = [sp[0] + ux * 20 + px * k * 16, sp[1] + uy * 20 + py * k * 16];
+    const a1 = [a0[0] + ux * S * 0.9, a0[1] + uy * S * 0.9];
+    ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a1[0], a1[1]);
+    ctx.lineTo(a1[0] - ux * 7 + px * 4, a1[1] - uy * 7 + py * 4);
+    ctx.lineTo(a1[0] - ux * 7 - px * 4, a1[1] - uy * 7 - py * 4);
+    ctx.fillStyle = '#EF9F27'; ctx.fill();
+  }
+  ctx.fillStyle = textCol; ctx.fillText('Sunlight', sp[0] - 24, sp[1] - 24);
+
+  // Orbit (split into parts behind and in front of Earth)
+  const pts = [];
+  for (let i = 0; i <= 240; i++) { const p = orbitPoint(i / 240 * 2 * Math.PI, beta); pts.push({ p: p, s: toScreen(p) }); }
+  const hidden = q => q.s[2] > 0 && Math.hypot(q.s[0] - cx, q.s[1] - cy) < S;
+  const drawOrbit = front => {
+    for (let i = 0; i < 240; i++) {
+      const a = pts[i], b = pts[i + 1], hd = hidden(a);
+      if (hd === front) continue;
+      ctx.strokeStyle = inShadow(a.p) ? '#888780' : '#EF9F27';
+      ctx.lineWidth = front ? 2.5 : 1.5;
+      ctx.setLineDash(hd ? [3, 4] : []);
+      ctx.beginPath(); ctx.moveTo(a.s[0], a.s[1]); ctx.lineTo(b.s[0], b.s[1]); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  };
+
+  // Satellite
+  const sat = orbitPoint(theta, beta), ss = toScreen(sat);
+  const satHidden = ss[2] > 0 && Math.hypot(ss[0] - cx, ss[1] - cy) < S;
+  const drawSat = () => {
+    ctx.fillStyle = inShadow(sat) ? '#888780' : '#EF9F27'; ctx.strokeStyle = textPri; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(ss[0], ss[1], 7, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  };
+
+  drawOrbit(false);
+  if (satHidden) drawSat();
+  if (!earthImg) buildEarth(S);
+  ctx.drawImage(earthImg.c, cx - earthImg.r, cy - earthImg.r, earthImg.r * 2, earthImg.r * 2);
+  drawOrbit(true);
+  if (!satHidden) drawSat();
+
+  // Orbit normal
+  const br = beta * Math.PI / 180, nrm = [Math.sin(br), -Math.cos(br), 0];
+  const n1 = toScreen([nrm[0] * 2.6, nrm[1] * 2.6, 0]);
+  ctx.strokeStyle = '#7F77DD'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(n1[0], n1[1]); ctx.stroke();
+  ctx.fillStyle = '#7F77DD'; ctx.fillText('orbit normal', n1[0] + 6, n1[1]);
+
+  // Labels
+  ctx.fillStyle = textPri; ctx.font = '500 15px sans-serif';
+  ctx.fillText('β = ' + Math.round(beta) + '°', 16, 26);
+  ctx.font = '12px sans-serif'; ctx.fillStyle = textCol;
+  ctx.fillText(Math.abs(beta) >= BSTAR ? 'Orbit never enters the shadow' : 'Orbit crosses the shadow', 16, 46);
+  ctx.fillText('No-eclipse limit β* = ' + BSTAR.toFixed(0) + '°', 16, 64);
+}
+
+function drawStrip() {
+  const w = st.clientWidth, f = eclipseFraction(beta);
+  sx.clearRect(0, 0, w, 28);
+  sx.fillStyle = '#EF9F27'; sx.fillRect(0, 0, w, 28);
+  sx.fillStyle = '#888780'; sx.fillRect(w * (0.5 - f / 2), 0, w * f, 28);
+  const t = ((theta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  sx.fillStyle = cssVar('--text'); sx.fillRect(w * t / (2 * Math.PI) - 1, 0, 3, 28);
+}
+
+function updateReadout() {
+  const f = eclipseFraction(beta);
+  bOut.textContent = Math.round(beta) + '°';
+  document.getElementById('ecl').textContent = Math.round(f * P) + ' min';
+  document.getElementById('sun').textContent = Math.round((1 - f) * 100) + ' %';
+  document.getElementById('case').textContent = f === 0 ? 'Hot' : (Math.abs(beta) < 20 ? 'Cold' : 'In between');
+}
+
+// ---------------- Controls and animation loop ----------------
+bIn.addEventListener('input', () => { beta = +bIn.value; sweeping = false; btn.textContent = 'Sweep β like FireSat II'; updateReadout(); });
+btn.addEventListener('click', () => {
+  sweeping = !sweeping;
+  if (sweeping) sweepT = Math.asin(Math.max(-1, Math.min(1, beta / BETA_MAX)));
+  btn.textContent = sweeping ? 'Stop sweep' : 'Sweep β like FireSat II';
+});
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  theta += dt * 1.1;                                     // satellite speed along the orbit
+  if (sweeping) { sweepT += dt * 0.35; beta = BETA_MAX * Math.sin(sweepT); bIn.value = Math.round(beta); updateReadout(); }
+  draw(); drawStrip();
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('resize', resize);
+resize(); updateReadout(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>
