@@ -64,14 +64,14 @@
 
   <hr style="border:none;border-top:1px solid var(--border);margin:40px 0 28px;">
 
-  <h1>Projecting the Sun onto the orbit plane</h1>
-  <p class="sub">β is the angle between the Sun direction and its projection onto the orbit plane.</p>
+  <h1>Earth-centred view</h1>
+  <p class="sub">β is the angle between the Sun direction and its projection onto the orbit plane. Sizes not to scale.</p>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px 28px;margin-bottom:16px;font-size:14px;">
     <div style="display:flex;align-items:center;gap:10px;"><label for="g-day" style="color:var(--muted);min-width:100px;white-space:nowrap;">Day of year</label><input type="range" id="g-day" min="1" max="365" step="1" value="172" style="flex:1;"><span id="g-dayOut" style="font-weight:500;min-width:56px;white-space:nowrap;">Jun 21</span></div>
     <div style="display:flex;align-items:center;gap:10px;"><label for="g-inc" style="color:var(--muted);min-width:100px;white-space:nowrap;">Inclination</label><input type="range" id="g-inc" min="0" max="180" step="1" value="55" style="flex:1;"><span id="g-incOut" style="font-weight:500;min-width:56px;white-space:nowrap;">55°</span></div>
     <div style="display:flex;align-items:center;gap:10px;"><label for="g-raan" style="color:var(--muted);min-width:100px;white-space:nowrap;">RAAN on Jan 1</label><input type="range" id="g-raan" min="0" max="360" step="1" value="0" style="flex:1;"><span id="g-raanOut" style="font-weight:500;min-width:56px;white-space:nowrap;">0°</span></div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><button id="g-play">Play year</button><label style="display:flex;align-items:center;gap:6px;color:var(--muted);"><input type="checkbox" id="g-prec" checked> J2 precession</label></div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><button id="g-play">Play year</button><button id="g-face">View orbit plane</button><label style="display:flex;align-items:center;gap:6px;color:var(--muted);"><input type="checkbox" id="g-prec" checked> J2 precession</label></div>
   </div>
 
   <div class="cards">
@@ -92,6 +92,38 @@
 
   <div style="margin-top:16px;font-size:13px;color:var(--muted);">β over the year (shaded: |β| above 64°, no eclipse; dashed: Sun declination)</div>
   <canvas id="g-ch" style="height:170px;margin-top:6px;"></canvas>
+
+  <hr style="border:none;border-top:1px solid var(--border);margin:40px 0 28px;">
+
+  <h1>Sun-centred view</h1>
+  <p class="sub">The same geometry seen from the Sun's frame. Sizes not to scale.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px 28px;margin-bottom:16px;font-size:14px;">
+    <div style="display:flex;align-items:center;gap:10px;"><label for="h-day" style="color:var(--muted);min-width:100px;white-space:nowrap;">Day of year</label><input type="range" id="h-day" min="1" max="365" step="1" value="172" style="flex:1;"><span id="h-dayOut" style="font-weight:500;min-width:56px;white-space:nowrap;">21 Jun</span></div>
+    <div style="display:flex;align-items:center;gap:10px;"><label for="h-inc" style="color:var(--muted);min-width:100px;white-space:nowrap;">Inclination</label><input type="range" id="h-inc" min="0" max="180" step="1" value="55" style="flex:1;"><span id="h-incOut" style="font-weight:500;min-width:56px;white-space:nowrap;">55°</span></div>
+    <div style="display:flex;align-items:center;gap:10px;"><label for="h-raan" style="color:var(--muted);min-width:100px;white-space:nowrap;">RAAN on Jan 1</label><input type="range" id="h-raan" min="0" max="360" step="1" value="0" style="flex:1;"><span id="h-raanOut" style="font-weight:500;min-width:56px;white-space:nowrap;">0°</span></div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <button id="h-play">Play year</button>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--muted);"><input type="checkbox" id="h-prec" checked> J2 precession</label>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--muted);"><input type="checkbox" id="h-seasons" checked> Show 4 seasons</label>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="lab">Date</div><div class="val" id="h-date">21 Jun</div></div>
+    <div class="card"><div class="lab">Current RAAN Ω</div><div class="val" id="h-raanNow">0°</div></div>
+    <div class="card"><div class="lab">Beta angle β</div><div class="val" id="h-beta">0°</div></div>
+    <div class="card"><div class="lab">Eclipse at 700 km</div><div class="val" id="h-ecl">35 min</div></div>
+  </div>
+
+  <canvas id="h-cv" style="height:480px;cursor:grab;touch-action:none;"></canvas>
+
+  <div class="legend">
+    <span><span class="dot" style="background:#EF9F27"></span>Sun and sunlight</span>
+    <span><span class="dot" style="background:#378ADD"></span>Earth (axis fixed in space)</span>
+    <span><span style="display:inline-block;width:16px;height:3px;background:#7F77DD;margin-right:6px;vertical-align:3px;"></span>FireSat II orbit plane</span>
+    <span>Faded copies: equinoxes and solstices</span>
+  </div>
 </main>
 
 <script>
@@ -360,12 +392,12 @@ resize(); updateReadout(); requestAnimationFrame(loop);
     const s = sunVec(day), O = raanAt(day), n = normalOf(O), b = Math.asin(dot(n, s));
     const sp = unit(add(s, sc(n, -dot(n, s))));                  // projection direction in the orbit plane
     const Nn = [Math.cos(O * D), Math.sin(O * D), 0], Q = cross(n, Nn);  // in-plane basis
-    const RO = 1.75, RS = 2.7;
+    const RO = 2.0, RS = 2.7;
 
     // Sun's yearly path (ecliptic)
     ring(t => [RS * Math.cos(t), RS * Math.cos(EPS) * Math.sin(t), RS * Math.sin(EPS) * Math.sin(t)], 180, 'rgba(239,159,39,0.45)', 1, [2, 5], false);
     // Orbit plane disc
-    ctx.fillStyle = 'rgba(127,119,221,0.13)'; ctx.beginPath();
+    ctx.fillStyle = 'rgba(127,119,221,0.22)'; ctx.beginPath();
     for (let k = 0; k <= 120; k++) { const t = k / 120 * 2 * Math.PI, p = T(add(sc(Nn, RO * Math.cos(t)), sc(Q, RO * Math.sin(t)))); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }
     ctx.fill();
     // Earth, equator, axis
@@ -379,6 +411,9 @@ resize(); updateReadout(); requestAnimationFrame(loop);
     ring(t => add(sc(Nn, RO * Math.cos(t)), sc(Q, RO * Math.sin(t))), 160, '#7F77DD', 2.2, [], true);
     const an = T(sc(Nn, RO)); ctx.fillStyle = '#7F77DD'; ctx.beginPath(); ctx.arc(an[0], an[1], 3.5, 0, 2 * Math.PI); ctx.fill();
     ctx.fillText('ascending node', an[0] + 6, an[1] + 12);
+    // label the orbit plane itself
+    const pl = T(add(sc(Nn, -RO * 0.55), sc(Q, RO * 0.75)));
+    ctx.font = '500 13px sans-serif'; ctx.fillStyle = '#7F77DD'; ctx.fillText('orbit plane', pl[0] - 30, pl[1]); ctx.font = '12px sans-serif';
     arrow([0, 0, 0], sc(n, 1.6), '#7F77DD', 2, 'orbit normal');
     // Sun vector, its projection, and the drop line between them
     const tipS = sc(s, RS), tipP = sc(sp, RS * Math.cos(b)), a1 = T(tipS), a2 = T(tipP);
@@ -430,6 +465,17 @@ resize(); updateReadout(); requestAnimationFrame(loop);
   $('g-inc').oninput = e => { inc = +e.target.value; render(); };
   $('g-raan').oninput = e => { O0 = +e.target.value; render(); };
   $('g-prec').onchange = e => { prec = e.target.checked; render(); };
+  // rotate the camera so the orbit plane is seen from 35 deg above it, side-on to the Sun projection (beta opens up)
+  function faceOrbit() {
+    const n = normalOf(raanAt(day)), s = sunVec(day);
+    const sp = unit(add(s, sc(n, -dot(n, s))));          // Sun projection direction (in plane)
+    const q = unit(cross(n, sp));                          // in-plane, perpendicular to the projection
+    const t = unit(add(sc(q, Math.cos(35 * D)), sc(n, Math.sin(35 * D))));   // look from 35 deg above the plane
+    pitch = Math.max(-1.4, Math.min(1.4, Math.asin(t[2])));
+    yaw = Math.atan2(-t[0], -t[1]);
+    draw();
+  }
+  $('g-face').onclick = faceOrbit;
   const pb = $('g-play');
   pb.onclick = () => { playing = !playing; pb.textContent = playing ? 'Pause' : 'Play year'; };
 
@@ -447,6 +493,144 @@ resize(); updateReadout(); requestAnimationFrame(loop);
   function loop(now) {
     const dt = (now - last) / 1000; last = now;
     if (playing) { acc += dt * 12; if (acc >= 1) { day += Math.floor(acc); acc %= 1; if (day > 365) day = 1; $('g-day').value = day; render(); } }
+    requestAnimationFrame(loop);
+  }
+  window.addEventListener('resize', () => { resize(); render(); });
+  resize(); render(); faceOrbit(); requestAnimationFrame(loop);
+})();
+</script>
+
+<script>
+// ================= Sun-centred view =================
+(function () {
+  const D = Math.PI / 180, RE = 6378, ALT = 700, AO = RE + ALT, PER = 98.8;
+  const BSTAR = Math.asin(RE / AO) / D, EPS = 23.44 * D;
+  const $ = id => document.getElementById(id);
+  const cv = $('h-cv'), ctx = cv.getContext('2d');
+  let day = 172, inc = 55, O0 = 0, prec = true, seasons = true, playing = false, yaw = 0.6, pitch = 0.55, W, HH, dpr, drag = null;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || '#888';
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const sc = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const unit = a => sc(a, 1 / Math.hypot(a[0], a[1], a[2]));
+
+  // Equatorial (ECI) -> ecliptic frame: rotate about the vernal-equinox axis by epsilon
+  const toEcl = v => [v[0], Math.cos(EPS) * v[1] + Math.sin(EPS) * v[2], -Math.sin(EPS) * v[1] + Math.cos(EPS) * v[2]];
+  const lam = d => 2 * Math.PI * (d - 80) / 365.25;              // Sun's ecliptic longitude seen from Earth
+  const sunVecEci = d => [Math.cos(lam(d)), Math.cos(EPS) * Math.sin(lam(d)), Math.sin(EPS) * Math.sin(lam(d))];
+  const rate = () => -9.964 * Math.pow(RE / AO, 3.5) * Math.cos(inc * D);
+  const raanAt = d => ((O0 + (prec ? rate() * (d - 1) : 0)) % 360 + 360) % 360;
+  const normalEci = O => { const i = inc * D, o = O * D; return [Math.sin(i) * Math.sin(o), -Math.sin(i) * Math.cos(o), Math.cos(i)]; };
+  const betaAt = d => Math.asin(Math.max(-1, Math.min(1, dot(normalEci(raanAt(d)), sunVecEci(d))))) / D;
+  const eclMin = b => Math.abs(b) >= BSTAR ? 0 : Math.acos(Math.sqrt(ALT * ALT + 2 * RE * ALT) / (AO * Math.cos(Math.abs(b) * D))) / Math.PI * PER;
+
+  function resize() { dpr = window.devicePixelRatio || 1; W = cv.clientWidth; HH = 480; cv.width = W * dpr; cv.height = HH * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+  function proj(p) {
+    const x = p[0] * Math.cos(yaw) - p[1] * Math.sin(yaw), y = p[0] * Math.sin(yaw) + p[1] * Math.cos(yaw), z = p[2];
+    return [x, y * Math.sin(pitch) + z * Math.cos(pitch), y * Math.cos(pitch) - z * Math.sin(pitch)];
+  }
+
+  function draw() {
+    const S = Math.min(W * 0.75, HH) * 0.165, cx = W / 2, cy = HH / 2;
+    const T = p => { const q = proj(p); return [cx + q[0] * S, cy - q[1] * S, q[2]]; };
+    const txt = css('--muted'), pri = css('--text');
+    ctx.clearRect(0, 0, W, HH); ctx.font = '12px sans-serif'; ctx.lineCap = 'round';
+    const RORB = 3.0, REARTH = 0.36, RSAT = 0.85;
+
+    // Earth's yearly orbit around the Sun (ecliptic) with month ticks
+    ctx.strokeStyle = txt; ctx.lineWidth = 1; ctx.setLineDash([2, 5]); ctx.beginPath();
+    for (let k = 0; k <= 180; k++) { const t = k / 180 * 2 * Math.PI, p = T([RORB * Math.cos(t), RORB * Math.sin(t), 0]); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }
+    ctx.stroke(); ctx.setLineDash([]);
+    [['Mar equinox', 80], ['Jun solstice', 172], ['Sep equinox', 266], ['Dec solstice', 355]].forEach(([name, d]) => {
+      const e = sc([Math.cos(lam(d)), Math.sin(lam(d)), 0], -RORB * 0.62), p = T(e);
+      ctx.fillStyle = txt; ctx.fillText(name, p[0] - ctx.measureText(name).width / 2, p[1] + 4);
+    });
+
+    // Draw one Earth with its axis, equator and FireSat II orbit plane at day d
+    function earthAt(d, faded) {
+      const a = faded ? 0.28 : 1;
+      const sEcl = [Math.cos(lam(d)), Math.sin(lam(d)), 0];   // unit vector Earth -> Sun
+      const E = sc(sEcl, -RORB);                               // Earth position (Sun at origin)
+      const O = raanAt(d), n = toEcl(normalEci(O));
+      const Nn = toEcl([Math.cos(O * D), Math.sin(O * D), 0]), Q = cross(n, Nn);
+      const zAx = toEcl([0, 0, 1]);
+      const ce = T(E), Rpx = REARTH * S;
+      // orbit plane disc and ring
+      ctx.globalAlpha = a;
+      ctx.fillStyle = 'rgba(127,119,221,0.22)'; ctx.beginPath();
+      for (let k = 0; k <= 80; k++) { const t = k / 80 * 2 * Math.PI, p = T(add(E, add(sc(Nn, RSAT * Math.cos(t)), sc(Q, RSAT * Math.sin(t))))); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }
+      ctx.fill(); ctx.strokeStyle = '#7F77DD'; ctx.lineWidth = faded ? 1.2 : 2; ctx.stroke();
+      // Earth: day side towards the Sun
+      ctx.fillStyle = '#0C447C'; ctx.beginPath(); ctx.arc(ce[0], ce[1], Rpx, 0, 2 * Math.PI); ctx.fill();
+      const sunScr = T([0, 0, 0]), ang = Math.atan2(sunScr[1] - ce[1], sunScr[0] - ce[0]);
+      ctx.fillStyle = '#378ADD'; ctx.beginPath(); ctx.arc(ce[0], ce[1], Rpx, ang - Math.PI / 2, ang + Math.PI / 2); ctx.fill();
+      // axis
+      const n1 = T(add(E, sc(zAx, REARTH * 1.8))), n2 = T(add(E, sc(zAx, -REARTH * 1.8)));
+      ctx.strokeStyle = pri; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(n2[0], n2[1]); ctx.lineTo(n1[0], n1[1]); ctx.stroke();
+      if (!faded) { ctx.fillStyle = pri; ctx.fillText('N', n1[0] + 3, n1[1] - 3); }
+      // orbit normal
+      const on = T(add(E, sc(n, RSAT * 1.2)));
+      ctx.strokeStyle = '#7F77DD'; ctx.lineWidth = faded ? 1 : 2; ctx.beginPath(); ctx.moveTo(ce[0], ce[1]); ctx.lineTo(on[0], on[1]); ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (faded) {
+        ctx.fillStyle = txt; ctx.fillText('β ' + Math.round(betaAt(d)) + '°', ce[0] + Rpx + 4, ce[1] - Rpx - 2);
+      }
+      return { E, ce, on, n };
+    }
+
+    // Sun at the centre
+    const sun = T([0, 0, 0]);
+    if (seasons) [80, 172, 266, 355].forEach(d => { if (Math.abs(d - day) > 6) earthAt(d, true); });
+    ctx.fillStyle = '#EF9F27'; ctx.beginPath(); ctx.arc(sun[0], sun[1], 16, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = txt; ctx.fillText('Sun (fixed)', sun[0] - 30, sun[1] + 30);
+
+    // current Earth with a sunlight ray
+    const sEcl = [Math.cos(lam(day)), Math.sin(lam(day)), 0], Ep = sc(sEcl, -RORB), ceNow = T(Ep);
+    ctx.strokeStyle = '#EF9F27'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+    const from = T(sc(sEcl, -0.25)), to = T(sc(sEcl, -(RORB - 0.85)));
+    ctx.beginPath(); ctx.moveTo(from[0], from[1]); ctx.lineTo(to[0], to[1]); ctx.stroke(); ctx.setLineDash([]);
+    const ux = to[0] - from[0], uy = to[1] - from[1], L = Math.hypot(ux, uy) || 1;
+    ctx.fillStyle = '#EF9F27'; ctx.beginPath(); ctx.moveTo(to[0], to[1]);
+    ctx.lineTo(to[0] - ux / L * 10 - uy / L * 5, to[1] - uy / L * 10 + ux / L * 5); ctx.lineTo(to[0] - ux / L * 10 + uy / L * 5, to[1] - uy / L * 10 - ux / L * 5); ctx.fill();
+    const now = earthAt(day, false);
+    ctx.fillStyle = '#7F77DD'; ctx.fillText('orbit plane', now.ce[0] + REARTH * S + 10, now.ce[1] + 18);
+    ctx.fillStyle = pri; ctx.font = '500 14px sans-serif';
+    ctx.fillText('β = ' + Math.round(betaAt(day)) + '°', now.ce[0] - 20, now.ce[1] - REARTH * S * 2.2 - 14);
+  }
+
+  function readout() {
+    const ds = new Date(2027, 0, day).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+    $('h-dayOut').textContent = ds; $('h-date').textContent = ds;
+    $('h-incOut').textContent = inc + '°'; $('h-raanOut').textContent = O0 + '°';
+    const bv = betaAt(day), e = eclMin(bv);
+    $('h-raanNow').textContent = Math.round(raanAt(day)) + '°';
+    $('h-beta').textContent = Math.round(bv) + '°';
+    $('h-ecl').textContent = e === 0 ? 'None' : Math.round(e) + ' min';
+  }
+  function render() { readout(); draw(); }
+
+  $('h-day').oninput = e => { day = +e.target.value; render(); };
+  $('h-inc').oninput = e => { inc = +e.target.value; render(); };
+  $('h-raan').oninput = e => { O0 = +e.target.value; render(); };
+  $('h-prec').onchange = e => { prec = e.target.checked; render(); };
+  $('h-seasons').onchange = e => { seasons = e.target.checked; render(); };
+  const pb = $('h-play');
+  pb.onclick = () => { playing = !playing; pb.textContent = playing ? 'Pause' : 'Play year'; };
+
+  cv.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY, yaw, pitch]; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; });
+  cv.addEventListener('pointermove', e => {
+    if (!drag) return;
+    yaw = drag[2] - (e.clientX - drag[0]) * 0.008;
+    pitch = Math.max(-1.4, Math.min(1.4, drag[3] + (e.clientY - drag[1]) * 0.008));
+    draw();
+  });
+  cv.addEventListener('pointerup', () => { drag = null; cv.style.cursor = 'grab'; });
+
+  let last = performance.now(), acc = 0;
+  function loop(now) {
+    const dt = (now - last) / 1000; last = now;
+    if (playing) { acc += dt * 12; if (acc >= 1) { day += Math.floor(acc); acc %= 1; if (day > 365) day = 1; $('h-day').value = day; render(); } }
     requestAnimationFrame(loop);
   }
   window.addEventListener('resize', () => { resize(); render(); });
