@@ -50,6 +50,10 @@
   .hidden { display:none !important; }
   canvas { width:100%; display:block; }
   .note { font-size:12px; color:var(--muted); margin-top:8px; }
+  .eqbox { background:var(--bg); border-radius:6px; padding:8px 12px; margin:8px 0 6px; text-align:center; font-size:15px; line-height:1.7; }
+  .eqbox.left { text-align:left; }
+  .where { display:grid; grid-template-columns:max-content 1fr; gap:2px 12px; font-size:12px; color:var(--muted); margin:0 0 8px; }
+  .where span:nth-child(odd) { text-align:right; color:var(--text); }
   .hwtable td, .hwtable th { padding:4px 4px; }
   .busy { opacity:0.55; transition:opacity .15s; }
   .eqs p { margin:6px 0; line-height:1.5; }
@@ -76,7 +80,7 @@
     <button id="tab3">Block 3: heat model</button>
     <button id="tab4" class="on">Block 4: requirements</button>
     <button id="tab5">Block 5: thermal hardware</button>
-    <button id="tab6" style="display:none">Block 6: testing</button>
+    <button id="tab6">Block 6: testing</button>
     <span style="flex:1"></span>
     <button id="btnReset" class="b45">Reset</button>
     <button id="btnCopy" class="b45">Copy design summary</button>
@@ -226,23 +230,121 @@ l0,-144c-2,-159.3,-10,-310.7,-24,-454c-53.3,-528,-210,-949.7,
       <div>
         <div class="card">
           <h2>A. Replacing the Sun with infrared</h2>
-          <p class="muted" style="margin:0 0 8px">A surface absorbs IR with its emissivity, so the IR flux that gives the same absorbed heat is q<sub>IR</sub> = α · q<sub>solar</sub> / ε.</p>
+          <p class="muted" style="margin:0 0 4px">A surface absorbs IR with its emissivity, so the IR flux that gives the same absorbed heat is:</p>
+          <div class="eqbox">q<sub>IR</sub> = α · q<sub>solar</sub> / ε</div>
+          <div class="where"><span>q<sub>IR</sub></span><span>IR flux the lamps must deliver (W/m²)</span><span>q<sub>solar</sub></span><span>solar flux (W/m²)</span><span>α</span><span>solar absorptance of the surface</span><span>ε</span><span>IR emittance of the surface</span></div>
           <div class="row"><label>Solar flux</label><input type="number" id="s6" value="1414" style="width:80px"> <span class="muted">W/m²</span></div>
           <div class="scroll"><table id="tab6a"></table></div>
         </div>
         <div class="card">
           <h2>B. Thermal vacuum test levels</h2>
-          <p class="muted" style="margin:0 0 8px">Reference design (Block 5 solution). Acceptance level = predicted range plus margin; qualification level = acceptance plus margin.</p>
+          <p class="muted" style="margin:0 0 4px">Reference design (Block 5 solution):</p>
+          <div class="eqbox left">Acceptance level = predicted range ± acceptance margin<br>Qualification level = predicted range ± qualification margin</div>
           <div class="row"><label>Acceptance margin</label><input type="number" id="acc6" value="5"> <span class="muted">K</span></div>
-          <div class="row"><label>Qualification margin</label><input type="number" id="qual6" value="5"> <span class="muted">K</span></div>
+          <div class="row"><label>Qualification margin</label><input type="number" id="qual6" value="10"> <span class="muted">K</span></div>
           <div class="scroll"><table id="tab6b"></table></div>
+          <div class="eqbox" style="margin-top:10px">τ = C / (ΣG + 4 · ΣG<sub>R</sub> · T̄<sup>3</sup>)</div>
+          <div class="where"><span>τ</span><span>time constant of the unit</span><span>C</span><span>heat capacity of the unit (J/K)</span><span>ΣG</span><span>sum of its conductive couplings (W/K)</span><span>ΣG<sub>R</sub></span><span>sum of its radiative couplings (W/K<sup>4</sup>)</span><span>T̄</span><span>temperature the radiation is linearised around, 293 K</span></div>
+          <div class="note" style="margin-top:0">After a step change, a unit covers 63 % of the way to its new temperature in τ and about 95 % in 3τ.</div>
           <div class="note">Typical cycle numbers: 4 for acceptance, 8 for qualification (check against the lecture). A unit needs about three time constants to settle at each plateau.</div>
         </div>
       </div>
       <div>
         <div class="card">
-          <h2>C. Model correlation with a thermal balance test</h2>
-          <p class="muted" style="margin:0 0 8px">The reference spacecraft was tested in a hot and a cold balance phase (heaters fixed at full power in the cold phase). Tune your model until every sensor agrees within ±2 K.</p>
+          <h2>C. Test setup in the chamber</h2>
+          <div class="scroll"><svg id="chamberDiagram" viewBox="0 0 700 250" role="img" aria-label="Heat flows in orbit and in the thermal vacuum chamber" style="width:100%;min-width:460px;height:auto;display:block;color:var(--text)">
+            <defs>
+              <marker id="c6O" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#EF9F27"/></marker>
+              <marker id="c6B" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#378ADD"/></marker>
+              <marker id="c6R" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#D85A30"/></marker>
+            </defs>
+            <g font-family="inherit" font-size="15" fill="currentColor">
+              <text x="170" y="22" text-anchor="middle" font-weight="500">In orbit</text>
+              <text x="530" y="22" text-anchor="middle" font-weight="500">In the chamber</text>
+              <line x1="350" y1="8" x2="350" y2="245" stroke="currentColor" stroke-opacity="0.2"/>
+              <!-- orbit -->
+              <rect x="125" y="100" width="90" height="70" rx="6" fill="#D85A30" fill-opacity="0.12" stroke="currentColor"/>
+              <text x="170" y="132" text-anchor="middle" font-size="13.5">spacecraft</text>
+              <text x="170" y="150" text-anchor="middle" font-size="13.5" fill="#D85A30">Q_int</text>
+              <circle cx="40" cy="60" r="16" fill="#EF9F27" fill-opacity="0.8"/>
+              <text x="40" y="95" text-anchor="middle" font-size="13.5" fill="#BA7517">Sun</text>
+              <line x1="58" y1="70" x2="122" y2="108" stroke="#EF9F27" stroke-width="2.5" marker-end="url(#c6O)"/>
+              <path d="M20,240 Q170,190 320,240" fill="#378ADD" fill-opacity="0.18" stroke="#378ADD" stroke-opacity="0.6"/>
+              <text x="170" y="236" text-anchor="middle" font-size="13.5" fill="#378ADD">Earth</text>
+              <line x1="150" y1="206" x2="150" y2="173" stroke="#EF9F27" stroke-width="2" marker-end="url(#c6O)"/>
+              <line x1="190" y1="206" x2="190" y2="173" stroke="#D85A30" stroke-width="2" marker-end="url(#c6R)"/>
+              <text x="100" y="196" text-anchor="end" font-size="13" fill="#BA7517">albedo</text>
+              <text x="240" y="196" font-size="13" fill="#D85A30">Earth IR</text>
+              <line x1="218" y1="120" x2="300" y2="80" stroke="#378ADD" stroke-width="2" marker-end="url(#c6B)"/>
+              <text x="300" y="66" text-anchor="middle" font-size="13" fill="#378ADD">deep space</text>
+              <text x="300" y="50" text-anchor="middle" font-size="13" fill="#378ADD">≈ −269 °C</text>
+              <!-- chamber -->
+              <rect x="395" y="45" width="270" height="185" rx="14" fill="none" stroke="#378ADD" stroke-width="7" stroke-opacity="0.55"/>
+              <text x="530" y="244" text-anchor="middle" font-size="13" fill="#378ADD">shroud, LN₂-cooled ≈ −180 °C</text>
+              <rect x="485" y="110" width="90" height="70" rx="6" fill="#D85A30" fill-opacity="0.12" stroke="currentColor"/>
+              <text x="530" y="142" text-anchor="middle" font-size="13.5">spacecraft</text>
+              <text x="530" y="160" text-anchor="middle" font-size="13.5" fill="#D85A30">Q_int</text>
+              <rect x="465" y="120" width="8" height="50" fill="#EF9F27" fill-opacity="0.8"/>
+              <line x1="425" y1="145" x2="462" y2="145" stroke="#EF9F27" stroke-width="2.5" marker-end="url(#c6O)"/>
+              <text x="430" y="95" text-anchor="middle" font-size="13" fill="#BA7517">Q_test</text>
+              <text x="430" y="111" text-anchor="middle" font-size="12" fill="#BA7517">lamps / heaters</text>
+              <line x1="578" y1="125" x2="640" y2="85" stroke="#378ADD" stroke-width="2" marker-end="url(#c6B)"/>
+              <text x="610" y="70" text-anchor="middle" font-size="13" fill="#378ADD">εσA·T⁴</text>
+              <line x1="640" y1="175" x2="580" y2="160" stroke="#378ADD" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#c6B)"/>
+              <text x="625" y="205" text-anchor="middle" font-size="13" fill="#378ADD">back from shroud</text>
+            </g>
+          </svg></div>
+          <p style="margin:10px 0 6px">In orbit, the spacecraft absorbs sunlight, albedo and Earth IR, and radiates to deep space. In the chamber there is no Sun and no Earth, and the walls (the shroud) are only cooled to about −180 °C, so they radiate some heat back onto the spacecraft. The test team applies Q<sub>test</sub> with IR lamps or skin heaters so that the spacecraft sees the same net heat as in orbit:</p>
+          <div class="eqbox">Q<sub>test</sub> = Q<sub>env</sub> − εσA · (T<sub>shroud</sub><sup>4</sup> − T<sub>space</sub><sup>4</sup>)</div>
+          <div class="where"><span>Q<sub>test</sub></span><span>heat to apply in the chamber (W)</span><span>Q<sub>env</sub></span><span>heat absorbed in orbit from Sun, albedo and Earth IR, orbit-averaged (W)</span><span>εA</span><span>emissivity × area of the outer surfaces (m²)</span><span>σ</span><span>Stefan–Boltzmann constant, 5.67·10⁻⁸ W/(m²K⁴)</span><span>T<sub>shroud</sub>, T<sub>space</sub></span><span>shroud and deep-space temperatures, in kelvin</span></div>
+          <p class="note" style="margin:0 0 8px">The units' own dissipation Q<sub>int</sub> is unchanged: they run as in orbit.</p>
+          <div class="row"><label>Balance phase</label><select id="c6case"><option value="HOT_OP">Hot balance (hot operating case)</option><option value="SAFE">Cold balance (safe mode)</option></select></div>
+          <div class="row"><label>Shroud temperature</label><input type="number" id="c6sh" value="-180" style="width:80px"> <span class="muted">°C &nbsp;(deep space: −269 °C)</span></div>
+          <div class="scroll"><table id="c6given"></table></div>
+          <div class="row" style="margin-top:10px"><label>Your Q<sub>test</sub></label><input type="number" id="c6ans" style="width:90px" placeholder="W"> <span class="muted">W</span> <span id="c6check"></span></div>
+          <div class="note" id="c6expl"></div>
+        </div>
+        <div class="card">
+          <h2>D. Thermal balance test and model correlation</h2>
+          <div class="scroll"><svg id="balanceTimeline" viewBox="0 0 700 262" role="img" aria-label="Combined thermal balance and thermal vacuum test: pump-down, hot balance, cold balance, thermal vacuum cycling, warm-up" style="width:100%;min-width:460px;height:auto;display:block;color:var(--text)">
+            <g font-family="inherit" font-size="13.5" fill="currentColor">
+              <rect x="100" y="28" width="140" height="184" fill="#D85A30" fill-opacity="0.08"/>
+              <rect x="244" y="28" width="132" height="184" fill="#378ADD" fill-opacity="0.10"/>
+              <rect x="380" y="28" width="250" height="184" fill="currentColor" fill-opacity="0.05"/>
+              <text x="170" y="46" text-anchor="middle" font-weight="500" font-size="15">HTB</text>
+              <text x="170" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">hot balance</text>
+              <text x="310" y="46" text-anchor="middle" font-weight="500" font-size="15">CTB</text>
+              <text x="310" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">cold balance</text>
+              <text x="505" y="46" text-anchor="middle" font-weight="500" font-size="15">TV cycling</text>
+              <text x="505" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">to the part B test levels (dashed)</text>
+              <text x="505" y="77" text-anchor="middle" font-size="12" fill-opacity="0.75">functional tests at each plateau</text>
+              <text x="80" y="62" text-anchor="middle" font-size="11.5" fill-opacity="0.7">pump-</text>
+              <text x="80" y="76" text-anchor="middle" font-size="11.5" fill-opacity="0.7">down</text>
+              <text x="655" y="62" text-anchor="middle" font-size="11.5" fill-opacity="0.7">warm-</text>
+              <text x="655" y="76" text-anchor="middle" font-size="11.5" fill-opacity="0.7">up</text>
+              <line x1="60" y1="212" x2="680" y2="212" stroke="currentColor" stroke-opacity="0.4"/>
+              <line x1="60" y1="28" x2="60" y2="212" stroke="currentColor" stroke-opacity="0.4"/>
+              <line x1="56" y1="116" x2="680" y2="116" stroke="currentColor" stroke-opacity="0.12"/>
+              <line x1="56" y1="156" x2="680" y2="156" stroke="currentColor" stroke-opacity="0.12"/>
+              <text x="52" y="120" text-anchor="end" font-size="12" fill-opacity="0.7">20 °C</text>
+              <text x="52" y="160" text-anchor="end" font-size="12" fill-opacity="0.7">0 °C</text>
+              <line x1="384" y1="87" x2="626" y2="87" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="4 3"/>
+              <line x1="384" y1="197" x2="626" y2="197" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="4 3"/>
+              <path d="M60,116 L95,116 C115,116 115,106 140,106 L235,106 C252,106 252,166 270,166 L372,166 C385,166 385,92 398,92 L420,92 C433,92 433,192 446,192 L468,192 C481,192 481,92 494,92 L516,92 C529,92 529,192 542,192 L564,192 C577,192 577,92 590,92 L610,92 C632,92 632,116 655,116 L680,116" fill="none" stroke="#D85A30" stroke-width="3"/>
+              <circle cx="228" cy="106" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="364" cy="166" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+              <text x="170" y="132" text-anchor="middle" font-size="12" fill-opacity="0.75">Q_test (hot), units on,</text>
+              <text x="170" y="147" text-anchor="middle" font-size="12" fill-opacity="0.75">heaters off</text>
+              <text x="170" y="168" text-anchor="middle" font-size="12">stable → record</text>
+              <text x="320" y="105" text-anchor="middle" font-size="12" fill-opacity="0.75">Q_test (cold),</text>
+              <text x="320" y="120" text-anchor="middle" font-size="12" fill-opacity="0.75">safe mode,</text>
+              <text x="320" y="135" text-anchor="middle" font-size="12" fill-opacity="0.75">heaters on</text>
+              <text x="320" y="190" text-anchor="middle" font-size="12">stable → record</text>
+              <text x="370" y="232" text-anchor="middle" font-size="12.5" fill-opacity="0.7">time (one to a few weeks) →</text>
+              <text x="370" y="252" text-anchor="middle" font-size="12.5" fill="#378ADD">shroud at ≈ −180 °C throughout (off scale)</text>
+            </g>
+          </svg></div>
+          <p class="muted" style="margin:0 0 8px">The reference spacecraft was tested in a combined thermal balance / thermal vacuum test (TB/TV) in the chamber from part C. The balance phases come first: in each one the test heat Q<sub>test</sub> is applied, the chamber waits until all temperatures are stable, and the sensors are recorded. The thermal vacuum cycles to the part B levels follow. Tune your model until every sensor agrees within ±2 K.</p>
           <div class="row"><label>Radiator joint factor</label><input type="range" id="c6j" min="0.2" max="1.5" step="0.05" value="1"><span class="val" id="c6jOut"></span></div>
           <div class="row"><label>Radiator emissivity</label><input type="range" id="c6r" min="0.5" max="0.9" step="0.01" value="0.8"><span class="val" id="c6rOut"></span></div>
           <div class="row"><label>MLI effective emittance</label><input type="range" id="c6m" min="0.01" max="0.1" step="0.005" value="0.03"><span class="val" id="c6mOut"></span></div>
@@ -271,13 +373,73 @@ l0,-144c-2,-159.3,-10,-310.7,-24,-454c-53.3,-528,-210,-949.7,
         <div class="row"><label>Radiator area</label><input type="range" id="radA" min="0" max="2" step="0.1" value="0"><span class="val" id="radAOut">0.0 m²</span></div>
         <div class="row"><label>Radiator finish</label>
           <select id="radF"><option value="OSR">OSR tiles (α 0.08, ε 0.80)</option><option value="white_paint">White paint (α 0.15, ε 0.91)</option><option value="black_paint">Black paint (α 0.95, ε 0.89)</option></select></div>
-        <div class="row hw5"><label>Louvres on radiator</label><input type="range" id="louvre" min="0" max="0.3" step="0.05" value="0"><span class="val" id="louvreOut">0.00 m²</span></div>
+        <div class="row hw5" style="display:none"><label>Louvres on radiator</label><input type="range" id="louvre" min="0" max="0.3" step="0.05" value="0"><span class="val" id="louvreOut">0.00 m²</span></div>
+      </div>
+
+      <div class="card hw5">
+        <h2>How the units are connected</h2>
+        <div class="scroll"><svg id="mountDiagram" viewBox="0 0 700 290" role="img" aria-label="A unit inside the structure: mounting conduction and radiation to the structure, strap or heat pipe to the radiator, structure and radiator radiate to space" style="width:100%;min-width:460px;height:auto;display:block;color:var(--text)">
+          <defs>
+            <marker id="m5G" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1D9E75"/></marker>
+            <marker id="m5O" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#EF9F27"/></marker>
+            <marker id="m5B" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#378ADD"/></marker>
+            <marker id="m5K" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" fill-opacity="0.6"/></marker>
+          </defs>
+          <g font-family="inherit" font-size="15" fill="currentColor">
+            <!-- structure shell -->
+            <rect x="120" y="40" width="360" height="220" rx="10" fill="none" stroke="currentColor" stroke-width="6" stroke-opacity="0.55"/>
+            <text x="300" y="66" text-anchor="middle" font-weight="500">Structure (outer panels)</text>
+            <!-- unit -->
+            <rect x="220" y="115" width="150" height="80" rx="6" fill="#D85A30" fill-opacity="0.12" stroke="currentColor"/>
+            <text x="295" y="148" text-anchor="middle" font-weight="500">Unit</text>
+            <text x="295" y="166" text-anchor="middle" font-size="13.5" fill-opacity="0.7">dissipation + heater</text>
+            <!-- mounting conduction -->
+            <rect x="230" y="195" width="10" height="62" fill="#1D9E75" fill-opacity="0.35"/>
+            <rect x="252" y="195" width="10" height="62" fill="#1D9E75" fill-opacity="0.35"/>
+            <line x1="276" y1="199" x2="276" y2="253" stroke="#1D9E75" stroke-width="2" marker-start="url(#m5G)" marker-end="url(#m5G)"/>
+            <text x="286" y="220" font-size="13.5" fill="#1D9E75">Mounting: conduction G</text>
+            <text x="286" y="237" font-size="13.5" fill="#1D9E75">filler ×2 · washers ×0.1</text>
+            <!-- radiation to structure -->
+            <line x1="218" y1="170" x2="126" y2="170" stroke="#1D9E75" stroke-width="2" stroke-dasharray="5 4" marker-start="url(#m5G)" marker-end="url(#m5G)"/>
+            <text x="172" y="140" text-anchor="middle" font-size="13.5" fill="#1D9E75">Radiation</text>
+            <text x="172" y="155" text-anchor="middle" font-size="13.5" fill="#1D9E75">black ≫ bare</text>
+            <!-- strap / heat pipe -->
+            <line x1="372" y1="140" x2="598" y2="140" stroke="#EF9F27" stroke-width="3" marker-start="url(#m5O)" marker-end="url(#m5O)"/>
+            <text x="540" y="108" text-anchor="middle" font-size="13.5" fill="#BA7517">Strap +1 W/K</text>
+            <text x="540" y="123" text-anchor="middle" font-size="13.5" fill="#BA7517">Heat pipe +8 W/K</text>
+            <!-- radiator -->
+            <rect x="600" y="70" width="16" height="170" fill="#378ADD" fill-opacity="0.25" stroke="currentColor"/>
+            <text x="608" y="60" text-anchor="middle" font-weight="500">Radiator</text>
+            <line x1="486" y1="225" x2="597" y2="225" stroke="currentColor" stroke-opacity="0.6" stroke-width="2" marker-start="url(#m5K)" marker-end="url(#m5K)"/>
+            <text x="540" y="245" text-anchor="middle" font-size="13.5" fill-opacity="0.75">bolted, 2 W/K</text>
+            <!-- to space -->
+            <line x1="114" y1="200" x2="30" y2="200" stroke="#378ADD" stroke-width="2" marker-end="url(#m5B)"/>
+            <text x="62" y="185" text-anchor="middle" font-size="13.5" fill="#378ADD">to space</text>
+            <text x="62" y="220" text-anchor="middle" font-size="13.5" fill="#378ADD">outer finish</text>
+            <line x1="619" y1="200" x2="694" y2="200" stroke="#378ADD" stroke-width="2" marker-end="url(#m5B)"/>
+            <text x="656" y="185" text-anchor="middle" font-size="13.5" fill="#378ADD">to space</text>
+          </g>
+        </svg></div>
+        <p style="margin:10px 0 6px">Each unit is bolted to the inside of the structure. Heat leaves a unit in two ways:</p>
+        <ul style="margin:0 0 6px;padding-left:20px">
+          <li><b>Through its mounting</b> (conduction), set by the contact conductance G: payload 3, avionics 4, ADCS 2, battery and tank 0.5 W/K.</li>
+          <li><b>By radiation</b> to the inside of the structure, set by the unit's <b>Surface</b> in the table below: black paint radiates well, bare aluminium hardly at all (about 15 times less). The outer finishes only set how the structure radiates to space.</li>
+        </ul>
+        <div class="eqbox">Q<sub>mount</sub> = G · (T<sub>unit</sub> − T<sub>structure</sub>)</div>
+        <div class="where"><span>Q<sub>mount</sub></span><span>heat flowing through the mounting (W)</span><span>G</span><span>contact conductance (W/K): watts per kelvin of temperature difference</span><span>T<sub>unit</sub>, T<sub>structure</sub></span><span>temperatures of the unit and the structure</span></div>
+        <p class="note" style="margin:0 0 6px">Example: the tank (G = 0.5 W/K), 30 K warmer than the structure, loses 15 W through its mounting; with washers only 1.5 W.</p>
+        <p style="margin:6px 0">The structure loses heat to space through its outer finishes. The radiator is a separate panel, only loosely bolted to the structure (2 W/K).</p>
+        <ul style="margin:0;padding-left:20px">
+          <li><b>Gap filler</b>: good contact, G × 2. For a unit that must get rid of its heat.</li>
+          <li><b>Isolating washers</b>: poor contact, G × 0.1. For a unit that must stay at its own temperature.</li>
+          <li><b>Strap or heat pipe</b>: a direct path to the radiator that bypasses the structure. It works in every case: it cools the unit when it is hot, but also when it is cold or switched off.</li>
+        </ul>
       </div>
 
       <div class="card">
         <h2>Units</h2>
         <div class="scroll"><table class="hwtable" id="unitTable"></table></div>
-        <div class="note hw5">Heaters are thermostat-controlled: on below the set point, off 3 K above it. Straps (+1 W/K) and heat pipes (+8 W/K) connect a unit to the radiator, so they need a radiator area above 0. Mounting: gap filler doubles the contact conductance to the structure, washers cut it by 90 %.</div>
+        <div class="note hw5">Heaters are thermostat-controlled: on below the set point, off 3 K above it. Straps and heat pipes need a radiator area above 0.</div>
       </div>
 
       <div class="card hw5">
@@ -696,15 +858,33 @@ function applyCorr(model, c) {
   m.eS = e / m.A_str;
   return m;
 }
-function balanceTest(corr) {
+// ----- chamber test setup (Block 6C) -----
+const T_SPACE_C = -269;                         // effective deep-space sink used for the comparison [deg C]
+function testSetup(cname, TshC) {
+  // heat the chamber must apply so that the DESIGN model sees the same net heat as in orbit (orbit-averaged)
+  const m = buildModel(REF_OPTICS, REF_HW, 5), env = envCase(cname, 2);
+  let sol = 0; for (const x of env.solar) sol += x; sol /= env.solar.length;
+  const Tsh = TshC + 273.15, Tsp = T_SPACE_C + 273.15, dq = SIGMA * (Tsh ** 4 - Tsp ** 4);
+  const envS = m.A_str * (m.aS * sol + m.eS * env.ir), envR = m.A_rad * (m.aR * sol + m.eR * env.ir);
+  const backS = m.eS * m.A_str * dq, backR = m.eR * m.A_rad * dq;
+  const Qint = STRUCTURE.Q + UNIT_KEYS.reduce((s, u) => s + (env.mode === "op" ? UNITS[u].Q_op : UNITS[u].Q_safe), 0);
+  return { Qenv: envS + envR, epsA: m.eS * m.A_str + m.eR * m.A_rad, back: backS + backR,
+           Qtest: envS + envR - backS - backR, QtestS: envS - backS, QtestR: envR - backR, Qint, mode: env.mode };
+}
+function chamberEnv(mode, TshC) {
+  // no Sun, no Earth: the only external IR is the shroud
+  return { solar: [0], ir: SIGMA * (TshC + 273.15) ** 4, mode, t: [0], dt: 1 };
+}
+function balanceTest(corr, TshC = -180) {
   const base = buildModel(REF_OPTICS, REF_HW, 5);
   const phases = [["Hot balance", "HOT_OP", 0], ["Cold balance", "SAFE", 1]];
   const rows = [];
   let s = 0;
   const truth = applyCorr(base, TRUE_CORR), user = applyCorr(base, corr);
   for (const [pname, cname, hf] of phases) {
-    const env = envCase(cname, 2), extra = new Float64Array(base.names.length);
+    const ts = testSetup(cname, TshC), env = chamberEnv(ts.mode, TshC), extra = new Float64Array(base.names.length);
     base.heaters.forEach(h => { extra[h.k] += h.P * hf; });
+    extra[0] += ts.QtestS; extra[1] += ts.QtestR;           // test heaters on the structure and the radiator
     const meas = simulate(truth, env, { steadyOnly: true, noHeaters: true, extraQ: extra });
     const sim = simulate(user, env, { steadyOnly: true, noHeaters: true, extraQ: extra });
     base.names.forEach((u, k) => { rows.push({ phase: pname, sensor: u, meas: meas[k] + SENSOR_NOISE[s++], sim: sim[k] }); });
@@ -1065,7 +1245,8 @@ function render3() {
 let ref6 = null;
 function build6() {
   ["s6", "acc6", "qual6"].forEach(id => $(id).oninput = render6);
-  ["c6j", "c6r", "c6m"].forEach(id => $(id).oninput = render6);
+  ["c6j", "c6r", "c6m", "c6sh", "c6ans"].forEach(id => $(id).oninput = render6);
+  $("c6case").onchange = render6;
 }
 function render6() {
   const S6 = +$("s6").value || 0;
@@ -1082,12 +1263,31 @@ function render6() {
     let gs = 0, grs = 0; for (let j = 0; j < model.names.length; j++) { gs += model.G[k][j]; grs += model.GR[k][j]; }
     const tau = model.C[k] / (gs + 4 * grs * 293 ** 3) / 3600;
     html += `<tr><td>${UNITS[u].label}</td><td>${lo.toFixed(0)} … ${hi.toFixed(0)} °C</td><td>${(lo - acc).toFixed(0)} … ${(hi + acc).toFixed(0)} °C</td>
-      <td>${(lo - acc - qual).toFixed(0)} … ${(hi + acc + qual).toFixed(0)} °C</td><td>${tau < 10 ? tau.toFixed(1) : tau.toFixed(0)} h</td></tr>`;
+      <td>${(lo - qual).toFixed(0)} … ${(hi + qual).toFixed(0)} °C</td><td>${tau < 10 ? tau.toFixed(1) : tau.toFixed(0)} h</td></tr>`;
   });
   $("tab6b").innerHTML = html;
   const corr = { joint: +$("c6j").value, epsRad: +$("c6r").value, epsMli: +$("c6m").value };
   $("c6jOut").textContent = corr.joint.toFixed(2); $("c6rOut").textContent = corr.epsRad.toFixed(2); $("c6mOut").textContent = corr.epsMli.toFixed(3);
-  const rows = balanceTest(corr);
+  // part C: test setup
+  const TshC = isFinite(parseFloat($("c6sh").value)) ? parseFloat($("c6sh").value) : -180;
+  const ts = testSetup($("c6case").value, TshC);
+  $("c6given").innerHTML = `<tr><th>Given (reference design)</th><th></th></tr>
+    <tr><td>Q<sub>env</sub>, absorbed in orbit</td><td>${ts.Qenv.toFixed(1)} W</td></tr>
+    <tr><td>εA of the outer surfaces</td><td>${ts.epsA.toFixed(3)} m²</td></tr>
+    <tr><td>Q<sub>int</sub>, units' dissipation (unchanged)</td><td>${ts.Qint.toFixed(0)} W</td></tr>`;
+  const ansRaw = $("c6ans").value, ans = parseFloat(ansRaw), chk = $("c6check"), expl = $("c6expl");
+  if (ansRaw === "" || !isFinite(ans)) { chk.innerHTML = ""; expl.textContent = ""; }
+  else if (Math.abs(ans - ts.Qtest) <= 1) {
+    chk.innerHTML = `<span class="chip ok">Correct</span>`;
+    expl.textContent = `Back-radiation from the shroud: ${ts.back.toFixed(1)} W, so Q_test = ${ts.Qenv.toFixed(1)} − ${ts.back.toFixed(1)} = ${ts.Qtest.toFixed(1)} W (${ts.QtestS.toFixed(1)} W on the structure, ${ts.QtestR.toFixed(1)} W on the radiator).`;
+  } else if (Math.abs(ans - ts.Qenv) <= 1) {
+    chk.innerHTML = `<span class="chip bad">Not yet</span>`;
+    expl.textContent = "That is the heat absorbed in orbit. The shroud is not at deep-space temperature: it also radiates onto the spacecraft.";
+  } else {
+    chk.innerHTML = `<span class="chip bad">Not yet</span>`;
+    expl.textContent = "Check the units: temperatures in kelvin, and the shroud term is subtracted.";
+  }
+  const rows = balanceTest(corr, TshC);
   let worst = 0;
   $("tab6c").innerHTML = `<tr><th>Phase</th><th>Sensor</th><th>Measured</th><th>Model</th><th>Error</th></tr>` + rows.map(r => {
     const e = Math.round((r.sim - r.meas) * 10) / 10 || 0; worst = Math.max(worst, Math.abs(e)); const ok = Math.abs(e) <= 2;
