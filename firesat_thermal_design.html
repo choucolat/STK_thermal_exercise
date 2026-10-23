@@ -301,8 +301,6 @@ l0,-144c-2,-159.3,-10,-310.7,-24,-454c-53.3,-528,-210,-949.7,
           <div class="row"><label>Balance phase</label><select id="c6case"><option value="HOT_OP">Hot balance (hot operating case)</option><option value="SAFE">Cold balance (safe mode)</option></select></div>
           <div class="row"><label>Shroud temperature</label><input type="number" id="c6sh" value="-180" style="width:80px"> <span class="muted">°C &nbsp;(deep space: −269 °C)</span></div>
           <div class="scroll"><table id="c6given"></table></div>
-          <div class="row" style="margin-top:10px"><label>Your Q<sub>test</sub></label><input type="number" id="c6ans" style="width:90px" placeholder="W"> <span class="muted">W</span> <span id="c6check"></span></div>
-          <div class="note" id="c6expl"></div>
         </div>
         <div class="card">
           <h2>D. Thermal balance test and model correlation</h2>
@@ -428,7 +426,7 @@ l0,-144c-2,-159.3,-10,-310.7,-24,-454c-53.3,-528,-210,-949.7,
         <div class="eqbox">Q<sub>mount</sub> = G · (T<sub>unit</sub> − T<sub>structure</sub>)</div>
         <div class="where"><span>Q<sub>mount</sub></span><span>heat flowing through the mounting (W)</span><span>G</span><span>contact conductance (W/K): watts per kelvin of temperature difference</span><span>T<sub>unit</sub>, T<sub>structure</sub></span><span>temperatures of the unit and the structure</span></div>
         <p class="note" style="margin:0 0 6px">Example: the tank (G = 0.5 W/K), 30 K warmer than the structure, loses 15 W through its mounting; with washers only 1.5 W.</p>
-        <p style="margin:6px 0">The structure loses heat to space through its outer finishes. The radiator is a separate panel, only loosely bolted to the structure (2 W/K).</p>
+        <p style="margin:6px 0">The structure loses heat to space through its outer finishes. The radiator is a separate panel, only loosely bolted to the structure (2 W/K). It faces deep space: it absorbs no sunlight, albedo or Earth IR, and only radiates heat away.</p>
         <ul style="margin:0;padding-left:20px">
           <li><b>Gap filler</b>: good contact, G × 2. For a unit that must get rid of its heat.</li>
           <li><b>Isolating washers</b>: poor contact, G × 0.1. For a unit that must stay at its own temperature.</li>
@@ -613,7 +611,9 @@ function simulate(model, env, opts = {}) {
     if (model.A_rad > 0) {
       const Al = model.A_louvre, Af = model.A_rad - Al;
       const el = Math.min(louvreEps(T[1] - 273.15), model.eR);
-      q[1] += model.A_rad * model.aR * sol + (Af * model.eR + Al * el) * (ir - SIGMA * T[1] ** 4);
+      // the radiator faces deep space: in orbit it absorbs no sunlight, albedo or Earth IR; in the chamber it sees the shroud
+      const irR = env.chamber ? ir : 0;
+      q[1] += (Af * model.eR + Al * el) * (irR - SIGMA * T[1] ** 4);
     }
     for (let i = 0; i < n; i++) {
       const Ti4 = T[i] ** 4;
@@ -841,7 +841,7 @@ function block3Models(c, alpha, eps) {
 }
 
 // ===================== Block 6: testing =====================
-const REF_OPTICS = { structure: { white_paint: 0.6 }, radiator_area: 0.8, radiator: "OSR",
+const REF_OPTICS = { structure: { white_paint: 0.6 }, radiator_area: 0.5, radiator: "OSR",
   unit_finish: { PAYLOAD: "black_paint", BATTERY: "bare_aluminium", TANK: "bare_aluminium", AVIONICS: "black_paint", ADCS: "black_paint" } };
 const REF_HW = [{ item: "MLI", area: 0.5 }, { item: "strap", unit: "PAYLOAD" },
   { item: "heater", unit: "BATTERY", power: 6, setpoint: 10 }, { item: "heater", unit: "TANK", power: 8, setpoint: 18 },
@@ -865,15 +865,17 @@ function testSetup(cname, TshC) {
   const m = buildModel(REF_OPTICS, REF_HW, 5), env = envCase(cname, 2);
   let sol = 0; for (const x of env.solar) sol += x; sol /= env.solar.length;
   const Tsh = TshC + 273.15, Tsp = T_SPACE_C + 273.15, dq = SIGMA * (Tsh ** 4 - Tsp ** 4);
-  const envS = m.A_str * (m.aS * sol + m.eS * env.ir), envR = m.A_rad * (m.aR * sol + m.eR * env.ir);
+  const envS = m.A_str * (m.aS * sol + m.eS * env.ir), envR = 0;     // the radiator faces deep space: it absorbs nothing in orbit
   const backS = m.eS * m.A_str * dq, backR = m.eR * m.A_rad * dq;
   const Qint = STRUCTURE.Q + UNIT_KEYS.reduce((s, u) => s + (env.mode === "op" ? UNITS[u].Q_op : UNITS[u].Q_safe), 0);
   return { Qenv: envS + envR, epsA: m.eS * m.A_str + m.eR * m.A_rad, back: backS + backR,
-           Qtest: envS + envR - backS - backR, QtestS: envS - backS, QtestR: envR - backR, Qint, mode: env.mode };
+           // all test heat goes on the structure: the radiator absorbs nothing in orbit, and its share of the
+           // shroud's back-radiation (backR) is compensated by applying that much less on the structure
+           Qtest: envS + envR - backS - backR, QtestS: envS - backS - backR, QtestR: 0, backR, Qint, mode: env.mode };
 }
 function chamberEnv(mode, TshC) {
   // no Sun, no Earth: the only external IR is the shroud
-  return { solar: [0], ir: SIGMA * (TshC + 273.15) ** 4, mode, t: [0], dt: 1 };
+  return { solar: [0], ir: SIGMA * (TshC + 273.15) ** 4, mode, t: [0], dt: 1, chamber: true };
 }
 function balanceTest(corr, TshC = -180) {
   const base = buildModel(REF_OPTICS, REF_HW, 5);
@@ -1140,7 +1142,7 @@ function copySummary() {
 function loadReference() {
   S = defaultState(); S.block = 5; S.margin = 5;
   S.structure = { block3_mix: 0, white_paint: 0.6, black_paint: 0, OSR: 0, gold: 0 };
-  S.radA = 0.8; S.radF = "OSR"; S.mli = 0.5;
+  S.radA = 0.5; S.radF = "OSR"; S.mli = 0.5;
   S.units.BATTERY.finish = "bare_aluminium"; S.units.TANK.finish = "bare_aluminium";
   S.units.PAYLOAD.link = "strap";
   S.units.BATTERY.heater = 6; S.units.BATTERY.setpoint = 10;
@@ -1245,7 +1247,7 @@ function render3() {
 let ref6 = null;
 function build6() {
   ["s6", "acc6", "qual6"].forEach(id => $(id).oninput = render6);
-  ["c6j", "c6r", "c6m", "c6sh", "c6ans"].forEach(id => $(id).oninput = render6);
+  ["c6j", "c6r", "c6m", "c6sh"].forEach(id => $(id).oninput = render6);
   $("c6case").onchange = render6;
 }
 function render6() {
@@ -1271,22 +1273,16 @@ function render6() {
   // part C: test setup
   const TshC = isFinite(parseFloat($("c6sh").value)) ? parseFloat($("c6sh").value) : -180;
   const ts = testSetup($("c6case").value, TshC);
-  $("c6given").innerHTML = `<tr><th>Given (reference design)</th><th></th></tr>
+  const TshK = TshC + 273.15, TspK = T_SPACE_C + 273.15;
+  $("c6given").innerHTML = `<tr><th>Reference design</th><th></th></tr>
     <tr><td>Q<sub>env</sub>, absorbed in orbit</td><td>${ts.Qenv.toFixed(1)} W</td></tr>
     <tr><td>εA of the outer surfaces</td><td>${ts.epsA.toFixed(3)} m²</td></tr>
+    <tr><td>T<sub>shroud</sub> / T<sub>space</sub></td><td>${TshK.toFixed(1)} K / ${TspK.toFixed(1)} K</td></tr>
+    <tr><td>Back-radiation from the shroud, εσA·(T<sub>shroud</sub><sup>4</sup> − T<sub>space</sub><sup>4</sup>)</td><td>${ts.back.toFixed(1)} W</td></tr>
+    <tr><td><b>Q<sub>test</sub> to apply</b></td><td><b>${ts.Qtest.toFixed(1)} W</b></td></tr>
+    <tr><td>&nbsp;&nbsp;on the structure / on the radiator</td><td>${ts.QtestS.toFixed(1)} W / ${ts.QtestR.toFixed(1)} W</td></tr>
+    <tr><td colspan="2" class="muted" style="font-size:12px">The radiator faces deep space and absorbs nothing in orbit, so it gets no test heat. In the chamber it still receives ${ts.backR.toFixed(1)} W from the shroud; that much less is applied on the structure.</td></tr>
     <tr><td>Q<sub>int</sub>, units' dissipation (unchanged)</td><td>${ts.Qint.toFixed(0)} W</td></tr>`;
-  const ansRaw = $("c6ans").value, ans = parseFloat(ansRaw), chk = $("c6check"), expl = $("c6expl");
-  if (ansRaw === "" || !isFinite(ans)) { chk.innerHTML = ""; expl.textContent = ""; }
-  else if (Math.abs(ans - ts.Qtest) <= 1) {
-    chk.innerHTML = `<span class="chip ok">Correct</span>`;
-    expl.textContent = `Back-radiation from the shroud: ${ts.back.toFixed(1)} W, so Q_test = ${ts.Qenv.toFixed(1)} − ${ts.back.toFixed(1)} = ${ts.Qtest.toFixed(1)} W (${ts.QtestS.toFixed(1)} W on the structure, ${ts.QtestR.toFixed(1)} W on the radiator).`;
-  } else if (Math.abs(ans - ts.Qenv) <= 1) {
-    chk.innerHTML = `<span class="chip bad">Not yet</span>`;
-    expl.textContent = "That is the heat absorbed in orbit. The shroud is not at deep-space temperature: it also radiates onto the spacecraft.";
-  } else {
-    chk.innerHTML = `<span class="chip bad">Not yet</span>`;
-    expl.textContent = "Check the units: temperatures in kelvin, and the shroud term is subtracted.";
-  }
   const rows = balanceTest(corr, TshC);
   let worst = 0;
   $("tab6c").innerHTML = `<tr><th>Phase</th><th>Sensor</th><th>Measured</th><th>Model</th><th>Error</th></tr>` + rows.map(r => {
