@@ -48,6 +48,8 @@
   .bar > div { height:100%; }
   .muted { color:var(--muted); }
   .hidden { display:none !important; }
+  .summary summary { cursor:pointer; }
+  .summary li { margin:4px 0; }
   canvas { width:100%; display:block; }
   .note { font-size:12px; color:var(--muted); margin-top:8px; }
   .eqbox { background:var(--bg); border-radius:6px; padding:8px 12px; margin:8px 0 6px; text-align:center; font-size:15px; line-height:1.7; }
@@ -222,6 +224,10 @@ l0,-144c-2,-159.3,-10,-310.7,-24,-454c-53.3,-528,-210,-949.7,
       </div>
     </div>
 
+        <details class="card summary">
+        <summary><b>Summary</b></summary>
+        <ul style="margin:8px 0 0;padding-left:20px"><li>SEET jumps at every eclipse entry and exit, because it has no thermal mass. The one-node model changes smoothly and lags behind: the spacecraft cannot heat up or cool down within minutes.</li><li>In Block 2, SEET's peak was higher in the cold case (albedo). With thermal mass, the order flips: the hot case (≈ 38 °C) is warmer than the cold case (≈ 15–24 °C), because the spacecraft follows the orbit-average heat input, and the eclipse lowers that average.</li><li>The swing shrinks from about 89 K (SEET) to about 9 K (one node): the time constant (≈ 2.7 h) is longer than the orbit (99 min).</li><li>The internal equipment is warmer than the structure and follows it with a delay. Changing the finish shows that α/ε sets the temperature, while a low ε (bare metal) traps the dissipation.</li></ul>
+      </details>
   </section>
 
   <!-- ================= BLOCK 6 ================= -->
@@ -358,6 +364,10 @@ l0,-144c-2,-159.3,-10,-310.7,-24,-454c-53.3,-528,-210,-949.7,
         </div>
       </div>
     </div>
+        <details class="card summary">
+        <summary><b>Summary</b></summary>
+        <ul style="margin:8px 0 0;padding-left:20px"><li>A: the IR flux needed explodes for low-ε surfaces (bare aluminium about 4200 W/m², MLI about 7000): those surfaces need skin heaters.</li><li>B: the full tank has a time constant of about 200 h, the other units below 1.5 h: the slowest unit sets the test duration. Compared with the survival limits in the Block 4 table, the qualification levels come close (battery −9 °C vs −10 °C).</li><li>C: the shroud correction is small (about 2 %): the shroud is very cold (T⁴) and FireSat II has a low εA.</li><li>D: the radiator error has the opposite sign to all other sensors. The joint factor and the radiator emissivity both fix the units, but push the radiator in opposite directions: only the right mix fits everything. Several groups will find different mixes that all pass: the answer is not unique.</li></ul>
+      </details>
   </section>
 
   <!-- ================= BLOCKS 4-5 ================= -->
@@ -485,6 +495,14 @@ l0,-144c-2,-159.3,-10,-310.7,-24,-454c-53.3,-528,-210,-949.7,
     </div>
   </div>
 
+        <details class="card summary b4only">
+        <summary><b>Summary</b></summary>
+        <ul style="margin:8px 0 0;padding-left:20px"><li>Changing one finish moves every unit up or down together: all units exchange heat with the same structure.</li><li>The units fail in opposite directions: payload, battery and avionics are too hot in the hot case, the tank is too cold in safe mode. Whatever cools the battery also freezes the tank.</li><li>The dissipating units (payload, avionics) run warmer than the structure; the battery and the tank, with no dissipation of their own, sit at the structure's temperature.</li><li>Optical properties set the average temperature of the whole spacecraft; they cannot give different units different temperatures. That needs local hardware (Block 5).</li></ul>
+      </details>
+      <details class="card summary hw5">
+        <summary><b>Summary</b></summary>
+        <ul style="margin:8px 0 0;padding-left:20px"><li>Adding the radiator cools everything, including the cold cases: fixing the hot case makes the cold case worse. That is why the design goes hot case first, then cold case.</li><li>A heater alone is not enough for the tank: without washers and a bare surface, its power leaks into the cold structure. Isolation makes the heater work.</li><li>In the temperature graph (cold operating case), the battery's curve flattens at its heater set point (10 °C): the thermostat stops it from going lower. The heavy tank is an almost flat line at about 20 °C, while the structure swings by about 10 K every orbit.</li><li>The radiator can be too small or too large: below about 0.4 m² the battery overheats in the hot case, above about 0.6 m² it gets too cold in safe mode. A radiator cannot be switched off, so it also cools in the cold cases.</li><li>The budget runs out in watts, not kilograms: the heaters use the full 14 W in safe mode, while the hardware weighs about 0.7 of 2 kg. A 10 K margin is barely possible.</li></ul>
+      </details>
   </section>
 
   <p class="note">Model: sphere-equivalent FireSat II (4.6 m² outer surface, orientation of faces not modelled), environment averaged over the body. Unit limits and hardware properties are typical values for teaching. Same model as <code>firesat_thermal.py</code>.</p>
@@ -949,6 +967,7 @@ function buildControls() {
   $("btnReset").onclick = () => { const b = S.block; S = defaultState(); S.block = b; changed(); };
   $("btnCopy").onclick = copySummary;
   if (TA) { $("btnRef").classList.remove("hidden"); $("btnRef").onclick = loadReference; }
+  if (!TA) document.querySelectorAll("details.summary").forEach(d => d.remove());   // block summaries: TA version only
   $("chartCase").innerHTML = Object.entries(CASES).map(([k, c]) => `<option value="${k}">${c.label}</option>`).join("");
   $("chartUnit").innerHTML = UNIT_KEYS.map(u => `<option value="${u}">Limits: ${UNITS[u].label}</option>`).join("");
   $("chartCase").onchange = drawChart; $("chartUnit").onchange = drawChart;
@@ -1000,6 +1019,7 @@ function designInputs() {
 function syncControls() {
   [3, 4, 5, 6].forEach(b => $("tab" + b).classList.toggle("on", S.block === b));
   document.querySelectorAll(".hw5").forEach(el => el.classList.toggle("hidden", S.block !== 5));
+  document.querySelectorAll(".b4only").forEach(el => el.classList.toggle("hidden", S.block !== 4));
   STRUCT_FINISHES.forEach(f => { $("fin_" + f).value = S.structure[f]; $("fin_" + f + "_out").textContent = S.structure[f].toFixed(1) + " m²"; });
   $("mli").value = S.mli; $("mliOut").textContent = S.mli.toFixed(1) + " m²";
   $("radA").value = S.radA; $("radAOut").textContent = S.radA.toFixed(1) + " m²";
