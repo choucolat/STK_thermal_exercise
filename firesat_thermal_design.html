@@ -304,45 +304,51 @@ l0,-144c-2,-159.3,-10,-310.7,-24,-454c-53.3,-528,-210,-949.7,
         </div>
         <div class="card">
           <h2>D. Thermal balance test and model correlation</h2>
-          <div class="scroll"><svg id="balanceTimeline" viewBox="0 0 700 262" role="img" aria-label="Combined thermal balance and thermal vacuum test: pump-down, hot balance, cold balance, thermal vacuum cycling, warm-up" style="width:100%;min-width:460px;height:auto;display:block;color:var(--text)">
+          <div class="scroll"><svg id="balanceTimeline" viewBox="0 0 760 262" role="img" aria-label="Combined thermal vacuum and thermal balance test: pump-down, thermal vacuum cycling, hot balance, cold balance, final cycle, warm-up" style="width:100%;min-width:480px;height:auto;display:block;color:var(--text)">
             <g font-family="inherit" font-size="13.5" fill="currentColor">
-              <rect x="100" y="28" width="140" height="184" fill="#D85A30" fill-opacity="0.08"/>
-              <rect x="244" y="28" width="132" height="184" fill="#378ADD" fill-opacity="0.10"/>
-              <rect x="380" y="28" width="250" height="184" fill="currentColor" fill-opacity="0.05"/>
-              <text x="170" y="46" text-anchor="middle" font-weight="500" font-size="15">HTB</text>
-              <text x="170" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">hot balance</text>
-              <text x="310" y="46" text-anchor="middle" font-weight="500" font-size="15">CTB</text>
-              <text x="310" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">cold balance</text>
-              <text x="505" y="46" text-anchor="middle" font-weight="500" font-size="15">TV cycling</text>
-              <text x="505" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">to the part B test levels (dashed)</text>
-              <text x="505" y="77" text-anchor="middle" font-size="12" fill-opacity="0.75">functional tests at each plateau</text>
-              <text x="80" y="62" text-anchor="middle" font-size="11.5" fill-opacity="0.7">pump-</text>
-              <text x="80" y="76" text-anchor="middle" font-size="11.5" fill-opacity="0.7">down</text>
-              <text x="655" y="62" text-anchor="middle" font-size="11.5" fill-opacity="0.7">warm-</text>
-              <text x="655" y="76" text-anchor="middle" font-size="11.5" fill-opacity="0.7">up</text>
-              <line x1="60" y1="212" x2="680" y2="212" stroke="currentColor" stroke-opacity="0.4"/>
+              <rect x="94" y="28" width="236" height="184" fill="currentColor" fill-opacity="0.05"/>
+              <rect x="334" y="28" width="128" height="184" fill="#D85A30" fill-opacity="0.08"/>
+              <rect x="466" y="28" width="128" height="184" fill="#378ADD" fill-opacity="0.10"/>
+              <rect x="598" y="28" width="96" height="184" fill="currentColor" fill-opacity="0.05"/>
+              <text x="212" y="46" text-anchor="middle" font-weight="500" font-size="15">TV cycling</text>
+              <text x="212" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">to the part B test levels (dashed)</text>
+              <text x="212" y="77" text-anchor="middle" font-size="12" fill-opacity="0.75">functional tests at each plateau</text>
+              <text x="398" y="46" text-anchor="middle" font-weight="500" font-size="15">HTB</text>
+              <text x="398" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">hot balance</text>
+              <text x="530" y="46" text-anchor="middle" font-weight="500" font-size="15">CTB</text>
+              <text x="530" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">cold balance</text>
+              <text x="646" y="46" text-anchor="middle" font-weight="500" font-size="15">Final</text>
+              <text x="646" y="62" text-anchor="middle" font-size="12" fill-opacity="0.75">cycle</text>
+              <text x="77" y="62" text-anchor="middle" font-size="11.5" fill-opacity="0.7">pump-</text>
+              <text x="77" y="76" text-anchor="middle" font-size="11.5" fill-opacity="0.7">down</text>
+              <text x="719" y="62" text-anchor="middle" font-size="11.5" fill-opacity="0.7">warm-</text>
+              <text x="719" y="76" text-anchor="middle" font-size="11.5" fill-opacity="0.7">up</text>
+              <line x1="60" y1="212" x2="740" y2="212" stroke="currentColor" stroke-opacity="0.4"/>
               <line x1="60" y1="28" x2="60" y2="212" stroke="currentColor" stroke-opacity="0.4"/>
-              <line x1="56" y1="116" x2="680" y2="116" stroke="currentColor" stroke-opacity="0.12"/>
-              <line x1="56" y1="156" x2="680" y2="156" stroke="currentColor" stroke-opacity="0.12"/>
+              <line x1="56" y1="116" x2="740" y2="116" stroke="currentColor" stroke-opacity="0.12"/>
+              <line x1="56" y1="156" x2="740" y2="156" stroke="currentColor" stroke-opacity="0.12"/>
               <text x="52" y="120" text-anchor="end" font-size="12" fill-opacity="0.7">20 °C</text>
               <text x="52" y="160" text-anchor="end" font-size="12" fill-opacity="0.7">0 °C</text>
-              <line x1="384" y1="87" x2="626" y2="87" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="4 3"/>
-              <line x1="384" y1="197" x2="626" y2="197" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="4 3"/>
-              <path d="M60,116 L95,116 C115,116 115,106 140,106 L235,106 C252,106 252,166 270,166 L372,166 C385,166 385,92 398,92 L420,92 C433,92 433,192 446,192 L468,192 C481,192 481,92 494,92 L516,92 C529,92 529,192 542,192 L564,192 C577,192 577,92 590,92 L610,92 C632,92 632,116 655,116 L680,116" fill="none" stroke="#D85A30" stroke-width="3"/>
-              <circle cx="228" cy="106" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
-              <circle cx="364" cy="166" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
-              <text x="170" y="132" text-anchor="middle" font-size="12" fill-opacity="0.75">Q_test (hot), units on,</text>
-              <text x="170" y="147" text-anchor="middle" font-size="12" fill-opacity="0.75">heaters off</text>
-              <text x="170" y="168" text-anchor="middle" font-size="12">stable → record</text>
-              <text x="320" y="105" text-anchor="middle" font-size="12" fill-opacity="0.75">Q_test (cold),</text>
-              <text x="320" y="120" text-anchor="middle" font-size="12" fill-opacity="0.75">safe mode,</text>
-              <text x="320" y="135" text-anchor="middle" font-size="12" fill-opacity="0.75">heaters on</text>
-              <text x="320" y="190" text-anchor="middle" font-size="12">stable → record</text>
-              <text x="370" y="232" text-anchor="middle" font-size="12.5" fill-opacity="0.7">time (one to a few weeks) →</text>
-              <text x="370" y="252" text-anchor="middle" font-size="12.5" fill="#378ADD">shroud at ≈ −180 °C throughout (off scale)</text>
+              <line x1="98" y1="87" x2="326" y2="87" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="4 3"/>
+              <line x1="98" y1="197" x2="326" y2="197" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="4 3"/>
+              <line x1="602" y1="87" x2="690" y2="87" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="4 3"/>
+              <line x1="602" y1="197" x2="690" y2="197" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="4 3"/>
+              <path d="M60,116 L88,116 C98,116 98,92 108,92 L128,92 C141,92 141,192 154,192 L174,192 C187,192 187,92 200,92 L220,92 C233,92 233,192 246,192 L266,192 C290,192 300,106 325,106 L455,106 C468,106 468,166 482,166 L590,166 C603,166 603,92 616,92 L636,92 C649,92 649,192 662,192 L680,192 C700,192 702,116 720,116 L740,116" fill="none" stroke="#D85A30" stroke-width="3"/>
+              <circle cx="448" cy="106" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="584" cy="166" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+              <text x="398" y="130" text-anchor="middle" font-size="12" fill-opacity="0.75">Q_test (hot),</text>
+              <text x="398" y="145" text-anchor="middle" font-size="12" fill-opacity="0.75">units on,</text>
+              <text x="398" y="160" text-anchor="middle" font-size="12" fill-opacity="0.75">heaters off</text>
+              <text x="398" y="181" text-anchor="middle" font-size="12">stable → record</text>
+              <text x="534" y="121" text-anchor="middle" font-size="12" fill-opacity="0.75">Q_test (cold),</text>
+              <text x="534" y="136" text-anchor="middle" font-size="12" fill-opacity="0.75">safe mode,</text>
+              <text x="534" y="151" text-anchor="middle" font-size="12" fill-opacity="0.75">heaters on</text>
+              <text x="530" y="190" text-anchor="middle" font-size="12">stable → record</text>
+              <text x="400" y="232" text-anchor="middle" font-size="12.5" fill-opacity="0.7">time (one to a few weeks) →</text>
+              <text x="400" y="252" text-anchor="middle" font-size="12.5" fill="#378ADD">shroud at ≈ −180 °C throughout (off scale)</text>
             </g>
           </svg></div>
-          <p class="muted" style="margin:0 0 8px">The reference spacecraft was tested in a combined thermal balance / thermal vacuum test (TB/TV) in the chamber from part C. The balance phases come first: in each one the test heat Q<sub>test</sub> is applied, the chamber waits until all temperatures are stable, and the sensors are recorded. The thermal vacuum cycles to the part B levels follow. Tune your model until every sensor agrees within ±2 K.</p>
+          <p class="muted" style="margin:0 0 8px">The reference spacecraft was tested in a combined thermal balance / thermal vacuum test (TB/TV) in the chamber from part C. The thermal vacuum cycles to the part B levels come first. Then follow the balance phases: in each one the test heat Q<sub>test</sub> is applied, the chamber waits until all temperatures are stable, and the sensors are recorded. A final thermal cycle closes the test. Tune your model until every sensor agrees within ±2 K.</p>
           <div class="row"><label>Radiator joint factor</label><input type="range" id="c6j" min="0.2" max="1.5" step="0.05" value="1"><span class="val" id="c6jOut"></span></div>
           <div class="row"><label>Radiator emissivity</label><input type="range" id="c6r" min="0.5" max="0.9" step="0.01" value="0.8"><span class="val" id="c6rOut"></span></div>
           <div class="row"><label>MLI effective emittance</label><input type="range" id="c6m" min="0.01" max="0.1" step="0.005" value="0.03"><span class="val" id="c6mOut"></span></div>
